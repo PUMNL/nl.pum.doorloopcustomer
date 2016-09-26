@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<extension key="nl.pum.doorloopcustomer" type="module">
+  <file>doorloopcustomer</file>
+  <name>Doorlooptijden Customer Process PUM</name>
+  <description>Pum Specific CiviCRM extension to measure throughput in the customer process</description>
+  <license>AGPL-3.0</license>
+  <maintainer>
+    <author>CiviCooP</author>
+    <email>helpdesk@civicoop.org</email>
+  </maintainer>
+  <urls>
+    <url desc="Main Extension Page">http://FIXME</url>
+    <url desc="Documentation">http://FIXME</url>
+    <url desc="Support">http://FIXME</url>
+    <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
+  </urls>
+  <releaseDate>2016-09-26</releaseDate>
+  <version>1.0</version>
+  <develStage>alpha</develStage>
+  <compatibility>
+    <ver>4.4</ver>
+  </compatibility>
+  <comments>Extension is being developed</comments>
+  <civix>
+    <namespace>CRM/Doorloopcustomer</namespace>
+  </civix>
+</extension>
