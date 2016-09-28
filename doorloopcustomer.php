@@ -3,6 +3,15 @@
 require_once 'doorloopcustomer.civix.php';
 
 /**
+ * Implements hook_civicrm_post
+ *
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_post
+ */
+function doorloopcustomer_civicrm_post($op, $objectName, $objectId, &$objectRef) {
+  CRM_Doorloopcustomer_Project::post($op, $objectName, $objectId, $objectRef);
+}
+
+/**
  * Implements hook_civicrm_config().
  *
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_config
