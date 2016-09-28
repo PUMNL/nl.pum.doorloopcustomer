@@ -5,13 +5,13 @@
   <description>Pum Specific CiviCRM extension to measure throughput in the customer process</description>
   <license>AGPL-3.0</license>
   <maintainer>
-    <author>CiviCooP</author>
-    <email>helpdesk@civicoop.org</email>
+    <author>Erik Hommel (CiviCooP)</author>
+    <email>erik.hommel@civicoop.org</email>
   </maintainer>
   <urls>
-    <url desc="Main Extension Page">http://FIXME</url>
-    <url desc="Documentation">http://FIXME</url>
-    <url desc="Support">http://FIXME</url>
+    <url desc="Main Extension Page">https://github.com/PUMNL/nl.pum.doorloopcustomer</url>
+    <url desc="Documentation">https://github.com/PUMNL/nl.pum.doorloopcustomer</url>
+    <url desc="Support">https://civicoop.org</url>
     <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
   </urls>
   <releaseDate>2016-09-26</releaseDate>
