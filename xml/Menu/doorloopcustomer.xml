@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/doorloopcustomer/civirules/action/setprojectdate</path>
+    <page_callback>CRM_Doorloopcustomer_CiviRulesActions_Form_SetProjectDate</page_callback>
+    <title>SetProjectDate</title>
+    <access_arguments>access CiviCRM</access_arguments>
+    <access_arguments>administer CiviCRM</access_arguments>
+  </item>
+</menu>
