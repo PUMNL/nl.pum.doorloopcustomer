@@ -15,7 +15,16 @@ class CRM_Doorloopcustomer_CiviRulesActions_SetProjectDate extends CRM_Civirules
    *
    */
   public function processAction(CRM_Civirules_TriggerData_TriggerData $triggerData) {
-    $entityData = $triggerData->getEntityData('Webform');
+    $trigger = $triggerData->getTrigger();
+    if (method_exists($trigger, 'getObjectName')) {
+      $objectName = $trigger->getObjectName();
+    } else {
+      $objectName = '';
+    }
+    $entityData = $triggerData->getEntityData($objectName);
+    if (!$entityData['project_id']) {
+      $this->findProjectId($entityData);
+    }
     $actionParams = $this->getActionParameters();
     $clauses = array();
     $params = array();
@@ -30,6 +39,20 @@ class CRM_Doorloopcustomer_CiviRulesActions_SetProjectDate extends CRM_Civirules
     if (!empty($clauses)) {
       $sql = 'UPDATE civicrm_project SET '.implode(', ', $clauses).' WHERE id = %1';
       CRM_Core_DAO::executeQuery($sql, $params);
+    }
+  }
+
+  /**
+   * Method to find project id based on available entityData
+   *
+   * @param $entityData
+   */
+  private function findProjectId(&$entityData) {
+    // find by case_id if there is one
+    if ($entityData['case_id']) {
+      $sql = 'SELECT project_id FROM civicrm_case_project WHERE case_id = %1 LIMIT 1';
+      $entityData['project_id'] = CRM_Core_DAO::singleValueQuery($sql, array(
+        1 => array($entityData['case_id'], 'Integer')));
     }
   }
 
