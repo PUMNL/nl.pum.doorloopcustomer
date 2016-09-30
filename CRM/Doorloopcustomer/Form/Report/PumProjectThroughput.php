@@ -218,9 +218,10 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
     }
     $newColumnHeaders = array('from_request_to_prof', 'from_create_to_request', 'from_request_to_rep', 'from_rep_to_prof');
     foreach ($newColumnHeaders as $newColumnHeader) {
+      $title = $this->generateTitleFromColumnName($newColumnHeader);
       $newHeader = array(
         'key' => $newColumnHeader,
-        'values' => array('title' => ts('From Request to Prof'), 'type' => CRM_Utils_Type::T_STRING,));
+        'values' => array('title' => ts($title), 'type' => CRM_Utils_Type::T_STRING,));
       $sortedHeaders[] = $newHeader;
     }
     foreach ($this->_columnHeaders as $headerKey => $header) {
@@ -232,6 +233,21 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
     foreach ($sortedHeaders as $sortedKey => $sortedHeader) {
       $this->_columnHeaders[$sortedHeader['key']] = $sortedHeader['values'];
     }
+  }
+
+  /**
+   * Method to generate header title for from to columns from column name
+   *
+   * @param $columnName
+   * @return string
+   */
+  private function generateTitleFromColumnName($columnName) {
+    $parts = explode('_', $columnName);
+    $result = array();
+    foreach ($parts as $part) {
+      $result[] = ucfirst($part);
+    }
+    return implode(' ', $result);
   }
 
   /**
