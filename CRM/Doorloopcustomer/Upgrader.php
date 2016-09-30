@@ -27,9 +27,19 @@ class CRM_Doorloopcustomer_Upgrader extends CRM_Doorloopcustomer_Upgrader_Base {
           CRM_Core_DAO::executeQuery('ALTER TABLE civicrm_project ADD COLUMN '.$columnName.' DATE NULL');
         }
       }
+      $this->executeSqlFile('/sql/createReportView.sql');
     } else {
       throw new Exception('Table civicrm_project not found in database in '.__METHOD__
         .', this table is required to use this extension. Contact your system administrator');
     }
+  }
+
+  /**
+   * Upgrade 1001 - add view
+   */
+  public function upgrade_1001() {
+    $this->ctx->log->info('Applying update 1001 (add report view to database');
+    $this->executeSqlFile('/sql/createReportView.sql');
+    return TRUE;
   }
 }

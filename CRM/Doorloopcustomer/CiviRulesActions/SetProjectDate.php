@@ -22,7 +22,7 @@ class CRM_Doorloopcustomer_CiviRulesActions_SetProjectDate extends CRM_Civirules
       $objectName = '';
     }
     $entityData = $triggerData->getEntityData($objectName);
-    if (!$entityData['project_id']) {
+    if (!isset($entityData['project_id']) || empty($entityData['project_id'])) {
       $this->findProjectId($entityData);
     }
     $actionParams = $this->getActionParameters();
