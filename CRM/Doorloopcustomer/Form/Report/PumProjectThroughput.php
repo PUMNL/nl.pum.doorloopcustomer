@@ -473,10 +473,9 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
    *
    */
   private function setReportUserContext() {
-    // todo find url of this report and change
-    $session = CRM_Core_Session::singleton();
+   $session = CRM_Core_Session::singleton();
     $instanceId = CRM_Core_DAO::singleValueQuery('SELECT id FROM civicrm_report_instance WHERE report_id = %1',
-      array(1 => array('nl.pum.casereports/pumprojects', 'String')));
+      array(1 => array('pumprojectthroughput', 'String')));
     if (!empty($instanceId)) {
       $session->pushUserContext(CRM_Utils_System::url('civicrm/report/instance/'.$instanceId, 'reset=1', true));
     } else {
