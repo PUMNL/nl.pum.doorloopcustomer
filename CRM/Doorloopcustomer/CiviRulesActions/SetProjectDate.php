@@ -14,7 +14,8 @@ class CRM_Doorloopcustomer_CiviRulesActions_SetProjectDate extends CRM_Civirules
    * @access public
    *
    */
-  public function processAction(CRM_Civirules_TriggerData_TriggerData $triggerData) {
+  public function processAction(CRM_Civirules_TriggerData_TriggerData $triggerData)
+  {
     $trigger = $triggerData->getTrigger();
     if (method_exists($trigger, 'getObjectName')) {
       $objectName = $trigger->getObjectName();
@@ -22,38 +23,62 @@ class CRM_Doorloopcustomer_CiviRulesActions_SetProjectDate extends CRM_Civirules
       $objectName = '';
     }
     $entityData = $triggerData->getEntityData($objectName);
-    if (!isset($entityData['project_id']) || empty($entityData['project_id'])) {
-      $this->findProjectId($entityData);
+    //get case and project data if available and always entityData for object
+    $projectData = $triggerData->getEntityData('Project');
+    $caseData = $triggerData->getEntityData('Case');
+    $entityData = $triggerData->getEntityData($objectName);
+    CRM_Core_Error::debug('projectData', $projectData);
+    CRM_Core_Error::debug('caseData', $caseData);
+    CRM_Core_Error::debug('entityData', $entityData);
+    /*
+     * project id should be in entity project. If not there, use case_id in caseData or entityData
+     */
+    if (!empty($projectData)) {
+      $projectId = $projectData['id'];
+    } else {
+      $projectId = $this->findProjectId($caseData, $entityData);
     }
-    $actionParams = $this->getActionParameters();
-    $clauses = array();
-    $params = array();
-    $params[1] = array($entityData['project_id'], 'Integer');
-    $nowDate = new DateTime();
-    $index = 1;
-    foreach ($actionParams['project_date'] as $projectDate) {
-      $index++;
-      $clauses[] = $projectDate.' = %'.$index;
-      $params[$index] = array($nowDate->format('Y-m-d'), 'String');
-    }
-    if (!empty($clauses)) {
-      $sql = 'UPDATE civicrm_project SET '.implode(', ', $clauses).' WHERE id = %1';
-      CRM_Core_DAO::executeQuery($sql, $params);
+    // no reason to do anything if no project id
+    if ($projectId) {
+      $actionParams = $this->getActionParameters();
+      $clauses = array();
+      $params = array();
+      $params[1] = array($projectId, 'Integer');
+      $nowDate = new DateTime();
+      $index = 1;
+      foreach ($actionParams['project_date'] as $projectDate) {
+        $index++;
+        $clauses[] = $projectDate . ' = %' . $index;
+        $params[$index] = array($nowDate->format('Y-m-d'), 'String');
+      }
+      if (!empty($clauses)) {
+        $sql = 'UPDATE civicrm_project SET ' . implode(', ', $clauses) . ' WHERE id = %1';
+        CRM_Core_DAO::executeQuery($sql, $params);
+      }
     }
   }
 
   /**
-   * Method to find project id based on available entityData
+   * Method to find project id based on available caseData and if not there attempt entityData
    *
-   * @param $entityData
+   * @param array $caseData
+   * @param array $entityData
+   * @return int|bool
    */
-  private function findProjectId(&$entityData) {
-    // find by case_id if there is one
-    if ($entityData['case_id']) {
-      $sql = 'SELECT project_id FROM civicrm_case_project WHERE case_id = %1 LIMIT 1';
-      $entityData['project_id'] = CRM_Core_DAO::singleValueQuery($sql, array(
-        1 => array($entityData['case_id'], 'Integer')));
+  private function findProjectId($caseData, $entityData) {
+    // if caseData, use id to find project else check if there is a case_id in entityData
+    if (!empty($caseData)) {
+      $caseId = $caseData['id'];
+    } else {
+      if (isset($entityData['case_id'])) {
+        $caseId = $entityData['case_id'];
+      }
     }
+    if ($caseId) {
+      $sql = 'SELECT project_id FROM civicrm_case_project WHERE case_id = %1 LIMIT 1';
+      return CRM_Core_DAO::singleValueQuery($sql, array(1 => array($caseId, 'Integer')));
+    }
+    return FALSE;
   }
 
   /**
