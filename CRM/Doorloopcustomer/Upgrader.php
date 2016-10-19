@@ -17,6 +17,7 @@ class CRM_Doorloopcustomer_Upgrader extends CRM_Doorloopcustomer_Upgrader_Base {
         'date_assess_prof',
         'date_first_main',
         'date_expert_added',
+        'date_expert_reacted',
         'date_cv_sent',
         'date_cust_approves_expert',
         'date_start_logistics',
@@ -39,6 +40,20 @@ class CRM_Doorloopcustomer_Upgrader extends CRM_Doorloopcustomer_Upgrader_Base {
    */
   public function upgrade_1001() {
     $this->ctx->log->info('Applying update 1001 (add report view to database');
+    $this->executeSqlFile('/sql/createReportView.sql');
+    return TRUE;
+  }
+
+  /**
+   * Upgrade 1002 - add latest update of view
+   */
+  public function upgrade_1002() {
+    $this->ctx->log->info('Applying update 1002 (add column date_expert_reacted and update report view to database');
+    if (CRM_Core_Dao::checkTableExists('civicrm_project')) {
+      if (!CRM_Core_DAO::checkFieldExists('civicrm_project', 'date_expert_reacted')) {
+        CRM_Core_DAO::executeQuery('ALTER TABLE civicrm_project ADD COLUMN date_expert_reacted DATE NULL');
+      }
+    }
     $this->executeSqlFile('/sql/createReportView.sql');
     return TRUE;
   }

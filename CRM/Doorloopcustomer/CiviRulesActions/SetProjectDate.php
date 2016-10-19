@@ -82,7 +82,12 @@ class CRM_Doorloopcustomer_CiviRulesActions_SetProjectDate extends CRM_Civirules
     $params = $this->getActionParameters();
     if (isset($params['project_date']) && !empty($params['project_date'])) {
       foreach ($params['project_date'] as $projectDate) {
-        $columnNames[] = $projectDate;
+        $labelParts = array();
+        $parts = explode('_', $projectDate);
+        foreach ($parts as $part) {
+          $labelParts[] = ucfirst($part);
+        }
+        $columnNames[] = implode(' ', $labelParts);
       }
     }
     if (!empty($columnNames)) {
