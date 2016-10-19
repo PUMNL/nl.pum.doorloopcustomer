@@ -14,8 +14,7 @@ class CRM_Doorloopcustomer_CiviRulesActions_SetProjectDate extends CRM_Civirules
    * @access public
    *
    */
-  public function processAction(CRM_Civirules_TriggerData_TriggerData $triggerData)
-  {
+  public function processAction(CRM_Civirules_TriggerData_TriggerData $triggerData) {
     $trigger = $triggerData->getTrigger();
     if (method_exists($trigger, 'getObjectName')) {
       $objectName = $trigger->getObjectName();
@@ -24,12 +23,9 @@ class CRM_Doorloopcustomer_CiviRulesActions_SetProjectDate extends CRM_Civirules
     }
     $entityData = $triggerData->getEntityData($objectName);
     //get case and project data if available and always entityData for object
-    $projectData = $triggerData->getEntityData('Project');
+    $projectData = $triggerData->getEntityData('PumProject');
     $caseData = $triggerData->getEntityData('Case');
     $entityData = $triggerData->getEntityData($objectName);
-    CRM_Core_Error::debug('projectData', $projectData);
-    CRM_Core_Error::debug('caseData', $caseData);
-    CRM_Core_Error::debug('entityData', $entityData);
     /*
      * project id should be in entity project. If not there, use case_id in caseData or entityData
      */
@@ -70,8 +66,12 @@ class CRM_Doorloopcustomer_CiviRulesActions_SetProjectDate extends CRM_Civirules
     if (!empty($caseData)) {
       $caseId = $caseData['id'];
     } else {
-      if (isset($entityData['case_id'])) {
-        $caseId = $entityData['case_id'];
+      if (isset($entityData['project_id'])) {
+        return $entityData['project_id'];
+      } else {
+        if (isset($entityData['case_id'])) {
+          $caseId = $entityData['case_id'];
+        }
       }
     }
     if ($caseId) {
