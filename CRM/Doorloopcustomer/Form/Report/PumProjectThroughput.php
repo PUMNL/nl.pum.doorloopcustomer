@@ -434,7 +434,7 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
           $row[$columnName] = '<span style="color: green;">' . $throughputString . '</span>';
         }
       } else {
-        $row[$columnName] = '<span style="color: red;"> - </span>';
+        $row[$columnName] = '<span style="color: green;"> - </span>';
       }
     }
   }
