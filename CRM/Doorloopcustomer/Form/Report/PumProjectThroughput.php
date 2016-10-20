@@ -17,6 +17,7 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
   protected $_countrySelectList = array();
   protected $_customerSelectList = array();
   protected $_userId = NULL;
+  private $_throughputColumnNames = array();
 
   /**
    * Constructor method
@@ -26,6 +27,7 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
     $this->setUserSelectList();
     $this->setCountrySelectList();
     $this->setCustomerSelectList();
+    $this->setThroughputColumnNames();
 
     $this->_columns = array(
       'project' => array(
@@ -39,11 +41,42 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
             'title' => ts('Project Name'),
             'required' => TRUE
           ),
+          'customer_name' => array(
+            'title' => ts('Customer or Country'),
+            'default' => TRUE
+          ),
+          'date_customer_created' => array(
+            'title' => ts('Date Customer Created'),
+          ),
+          'date_request_submitted' => array(
+            'title' => ts('Date Request Received'),
+          ),
+          'date_assess_rep' => array(
+            'title' => ts('Date Assessment Rep'),
+          ),
+          'date_assess_prof' => array(
+            'title' => ts('Date Assessment Prof'),
+          ),
+          'date_first_main' => array(
+            'title' => ts('Date First Main Act'),
+          ),
+          'date_expert_reacted' => array(
+            'title' => ts('Date Expert Reacted'),
+          ),
+          'date_cv_sent' => array(
+            'title' => ts('Date CV Sent'),
+          ),
+          'date_cust_approves_expert' => array(
+            'title' => ts('Date Cust Appr. Expert'),
+          ),
+          'date_start_logistics' => array(
+            'title' => ts('Date Logistics Started'),
+          ),
           'start_date' => array(
-            'title' => ts('Start Date'),
+            'title' => ts('Project Start Date'),
           ),
           'end_date' => array(
-            'title' => ts('End Date')
+            'title' => ts('Project End Date')
           ),
           'country_id' => array(
             'no_display' => TRUE,
@@ -52,10 +85,6 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
           'customer_id' => array(
             'no_display' => TRUE,
             'required' => TRUE
-          ),
-          'customer_name' => array(
-            'title' => ts('Customer or Country'),
-            'default' => TRUE
           ),
           'country_name' => array(
             'no_display' => TRUE,
@@ -84,24 +113,7 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
           'programme_manager_id' => array(
             'no_display' => TRUE,
             'required' => TRUE
-          ),
-          'date_customer_created' => array(
-            'title' => ts('Date Customer Created'),
-            'required' => TRUE
-          ),
-          'date_request_submitted' => array(
-            'title' => ts('Date Request Received'),
-            'required' => TRUE
-          ),
-          'date_assess_rep' => array(
-            'title' => ts('Date Assessment Rep'),
-            'required' => TRUE
-          ),
-          'date_assess_prof' => array(
-            'title' => ts('Date Assessment Prof'),
-            'required' => TRUE
-          ),
-        ),
+          ),),
         'filters' => array(
           'user_id' => array(
             'title' => ts('Projects for user'),
@@ -140,6 +152,51 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
       ),
     );
     parent::__construct();
+  }
+
+  /**
+   * Method to set the column names for the throughput columns
+   *
+   * @access private
+   */
+  private function setThroughputColumnNames() {
+    // todo check against column names in modifyColumnHeaders
+    $norms = CRM_Doorloopcustomer_Utils::getThroughutNormValues();
+    $names = array(
+      'from_request_to_approve_prof' => array(
+        'from_date' => 'project_date_request_submitted',
+        'to_date' => 'project_date_assess_prof'),
+      'from_customer_created_to_request' => array(
+        'from_date' => 'project_date_customer_created',
+        'to_date' => 'project_date_request_submitted'),
+      'from_request_to_approve_rep' => array(
+        'from_date' => 'project_date_request_submitted',
+        'to_date' => 'project_date_assess_rep'),
+      'from_approve_rep_to_approve_prof' => array(
+        'from_date' => 'project_date_assess_rep',
+        'to_date' => 'project_date_assess_prof'),
+      'from_approve_prof_to_first_main' => array(
+        'from_date' => 'project_date_assess_prof',
+        'to_date' => 'project_date_first_main'),
+      'from_first_main_to_expert_reacted' => array(
+        'from_date' => 'project_date_first_main',
+        'to_date' => 'project_date_expert_reacted'),
+      'from_expert_reacted_to_cv_sent' => array(
+        'from_date' => 'project_date_expert_reacted',
+        'to_date' => 'project_date_cv_sent'),
+      'from_cv_sent_to_customer_approves' => array(
+        'from_date' => 'project_date_cv_sent',
+        'to_date' => 'project_date_cust_approves_expert'),
+      'from_customer_approves_to_start_logistics' => array(
+        'from_date' => 'project_date_cust_approves_expert',
+        'to_date' => 'project_date_start_logistics'),
+    );
+    foreach ($names as $key => $values) {
+      $this->_throughputColumnNames[$key] = array(
+        'from_date' => $values['from_date'],
+        'to_date' => $values['to_date'],
+        'norm' => $norms[$key]);
+    }
   }
 
   /**
@@ -212,11 +269,20 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
   function modifyColumnHeaders() {
     $sortedHeaders = array();
     foreach ($this->_columnHeaders as $headerKey => $header) {
-      if ($headerKey == 'project_project_id' || $headerKey == 'project_project_name') {
+      if ($headerKey == 'project_project_id' || $headerKey == 'project_project_name' || $headerKey == 'project_customer_name') {
         $sortedHeaders[] = array('key' => $headerKey, 'values' => $header);
       }
     }
-    $newColumnHeaders = array('from_request_to_prof', 'from_create_to_request', 'from_request_to_rep', 'from_rep_to_prof');
+    $newColumnHeaders = array(
+      'from_customer_created_to_request',
+      'from_request_to_approve_rep',
+      'from_approve_rep_to_approve_prof',
+      'from_request_to_approve_prof',
+      'from_approve_prof_to_first_main',
+      'from_first_main_to_expert_reacted',
+      'from_expert_reacted_to_cv_sent',
+      'from_cv_sent_to_customer_approves',
+      'from_customer_approves_to_start_logistics');
     foreach ($newColumnHeaders as $newColumnHeader) {
       $title = $this->generateTitleFromColumnName($newColumnHeader);
       $newHeader = array(
@@ -225,7 +291,7 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
       $sortedHeaders[] = $newHeader;
     }
     foreach ($this->_columnHeaders as $headerKey => $header) {
-      if ($headerKey != 'project_project_id' && $headerKey != 'project_project_name') {
+      if ($headerKey != 'project_project_id' && $headerKey != 'project_project_name' && $headerKey != 'project_customer_name') {
         $sortedHeaders[] = array('key' => $headerKey, 'values' => $header);
       }
     }
@@ -272,7 +338,6 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
    * @param array $rows
    */
   function alterDisplay(&$rows) {
-    $this->addThroughputColumns($rows);
 
     foreach ($rows as $rowNum => $row) {
       if (array_key_exists('project_project_id', $row)) {
@@ -296,6 +361,7 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
 
       if (array_key_exists('project_date_request_submitted', $row) && (!empty($row['project_date_request_submitted']))) {
         $rows[$rowNum]['project_date_request_submitted'] = date('j F Y', strtotime($row['project_date_request_submitted']));
+
       }
 
       if (array_key_exists('project_date_assess_rep', $row) && (!empty($row['project_date_assess_rep']))) {
@@ -330,27 +396,25 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
   /**
    * Method to add the required throughput columns to the report row
    *
-   * @param $rows
+   * @param $row
    */
-  private function addThroughputColumns(&$rows) {
-    $columnNames = array(
-      'from_request_to_prof' => array(
-        'from_date' => 'project_date_request_submitted',
-        'to_date' => 'project_date_assess_prof'),
-      'from_create_to_request' => array(
-        'from_date' => 'project_date_customer_created',
-        'to_date' => 'project_date_request_submitted'),
-      'from_request_to_rep' => array(
-        'from_date' => 'project_date_request_submitted',
-        'to_date' => 'project_date_assess_rep'),
-      'from_rep_to_prof' => array(
-        'from_date' => 'project_date_assess_rep',
-        'to_date' => 'project_date_assess_prof'
-    ));
-    foreach ($rows as $rowNum => $row) {
-      foreach ($columnNames as $columnName => $columnDates) {
-        $rows[$rowNum][$columnName] = $this->calculateThroughput($row[$columnDates['from_date']],
-          $row[$columnDates['to_date']]).ts(' days');
+  private function addThroughputColumns($dao, &$row) {
+
+    foreach ($this->_throughputColumnNames as $columnName => $columnValues) {
+      $fromDateColumn = $columnValues['from_date'];
+      $toDateColumn = $columnValues['to_date'];
+      $fromDate = $dao->$fromDateColumn;
+      $toDate = $dao->$toDateColumn;
+      $throughput = $this->calculateThroughput($fromDate, $toDate);
+      if ($throughput == 0) {
+        $throughputString = '0 days';
+      } else {
+        $throughputString = $throughput . ' days';
+      }
+      if ($throughput > $columnValues['norm']) {
+        $row[$columnName] = '<span style="color: red;">' . $throughputString . '</span>';
+      } else {
+        $row[$columnName] = '<span style="color: green;">' . $throughputString . '</span>';
       }
     }
   }
@@ -482,6 +546,58 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
       $session->pushUserContext(CRM_Utils_System::url('civicrm/dashboard/', 'reset=1', true));
     }
   }
+  /**
+   * Overridden parent method select to make sure that the required date fields are selected in the row
+   * even if they are not selected to be displayed
+   */
+  public function select() {
+    parent::select();
+    $dateColumns = array('date_customer_created', 'date_request_submitted', 'date_assess_rep', 'date_assess_prof',
+      'date_first_main', 'date_expert_added', 'date_expert_reacted', 'date_cv_sent', 'date_cust_approves_expert',
+      'date_start_logistics');
+    foreach ($dateColumns as $dateColumn) {
+      $clause = $this->_aliases['project'].'.'.$dateColumn.' as project_'.$dateColumn;
+      if (!in_array($clause, $this->_selectClauses)) {
+        $this->_selectClauses[] = $clause;
+      }
+    }
+    $this->_select = "SELECT " . implode(', ', $this->_selectClauses) . " ";
+  }
 
+  /**
+   * Overridden parent method to build rows taking throughput columns into account
+   * @param $sql
+   * @param $rows
+   */
+  function buildRows($sql, &$rows) {
+    $dao = CRM_Core_DAO::executeQuery($sql);
+    if (!is_array($rows)) {
+      $rows = array();
+    }
 
+    // use this method to modify $this->_columnHeaders
+    $this->modifyColumnHeaders();
+
+    $unselectedSectionColumns = $this->unselectedSectionColumns();
+
+    while ($dao->fetch()) {
+      $row = array();
+      foreach ($this->_columnHeaders as $key => $value) {
+        if (property_exists($dao, $key)) {
+          $row[$key] = $dao->$key;
+        }
+      }
+
+      // section headers not selected for display need to be added to row
+      foreach ($unselectedSectionColumns as $key => $values) {
+        if (property_exists($dao, $key)) {
+          $row[$key] = $dao->$key;
+        }
+      }
+
+      // add throughput columns to row
+      $this->addThroughputColumns($dao, $row);
+      $rows[] = $row;
+    }
+  }
 }

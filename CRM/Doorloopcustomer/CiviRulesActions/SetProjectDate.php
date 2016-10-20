@@ -25,14 +25,15 @@ class CRM_Doorloopcustomer_CiviRulesActions_SetProjectDate extends CRM_Civirules
     //get case and project data if available and always entityData for object
     $projectData = $triggerData->getEntityData('PumProject');
     $caseData = $triggerData->getEntityData('Case');
-    $entityData = $triggerData->getEntityData($objectName);
+    // if travelcase get case id from parent case else from caseData
+    $caseId = $this->retrieveCaseId($caseData);
     /*
      * project id should be in entity project. If not there, use case_id in caseData or entityData
      */
     if (!empty($projectData)) {
       $projectId = $projectData['id'];
     } else {
-      $projectId = $this->findProjectId($caseData, $entityData);
+      $projectId = $this->findProjectId($caseId, $entityData);
     }
     // no reason to do anything if no project id
     if ($projectId) {
@@ -55,23 +56,38 @@ class CRM_Doorloopcustomer_CiviRulesActions_SetProjectDate extends CRM_Civirules
   }
 
   /**
+   * Method to retrieve caseId directly from caseData if not a travelcase, else use parent_case
+   *
+   * @param $caseData
+   * @return int|bool
+   */
+  private function retrieveCaseId($caseData) {
+    $config = CRM_Travelcase_Config::singleton();
+    $travelCaseTypeId = $config->getCaseType('value');
+    if (isset($caseData['case_type_id'])) {
+      $caseTypeId = str_replace(CRM_Core_DAO::VALUE_SEPARATOR, "", $caseData['case_type_id']);
+      if ($caseTypeId == $travelCaseTypeId) {
+        return CRM_Travelcase_Utils_GetParentCaseId::getParentCaseId($caseData['id']);
+      }
+    }
+    return $caseData['id'];
+  }
+
+  /**
    * Method to find project id based on available caseData and if not there attempt entityData
    *
-   * @param array $caseData
+   * @param int $caseId
    * @param array $entityData
    * @return int|bool
    */
-  private function findProjectId($caseData, $entityData) {
-    // if caseData, use id to find project else check if there is a case_id in entityData
-    if (!empty($caseData)) {
-      $caseId = $caseData['id'];
-    } else {
-      if (isset($entityData['project_id'])) {
-        return $entityData['project_id'];
-      } else {
-        if (isset($entityData['case_id'])) {
-          $caseId = $entityData['case_id'];
-        }
+  private function findProjectId($caseId, $entityData) {
+    // if caseId, use that to find project else check if there is a case_id in entityData
+    if (isset($entityData['project_id'])) {
+      return $entityData['project_id'];
+    }
+    if (!$caseId) {
+      if (isset($entityData['case_id'])) {
+        $caseId = $entityData['case_id'];
       }
     }
     if ($caseId) {
