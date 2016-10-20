@@ -14,7 +14,7 @@ return array (
       'label' => 'PumProjectThroughput',
       'description' => 'PumProjectThroughput (nl.pum.doorloopcustomer)',
       'class_name' => 'CRM_Doorloopcustomer_Form_Report_PumProjectThroughput',
-      'report_url' => 'pumprojectthroughput',
+      'report_url' => 'pumprojectthroughputcustomer',
       'component' => '',
     ),
   ),

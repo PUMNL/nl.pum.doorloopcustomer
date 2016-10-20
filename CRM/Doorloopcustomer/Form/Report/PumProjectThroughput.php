@@ -42,7 +42,7 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
             'required' => TRUE
           ),
           'customer_name' => array(
-            'title' => ts('Customer or Country'),
+            'title' => ts('Customer'),
             'default' => TRUE
           ),
           'date_customer_created' => array(
@@ -299,6 +299,7 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
     foreach ($sortedHeaders as $sortedKey => $sortedHeader) {
       $this->_columnHeaders[$sortedHeader['key']] = $sortedHeader['values'];
     }
+    $this->_columnHeaders['drill_down'] = array('title' => '','type' => CRM_Utils_Type::T_STRING,);
   }
 
   /**
@@ -371,6 +372,21 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
       if (array_key_exists('project_date_assess_prof', $row) && (!empty($row['project_date_assess_prof']))) {
         $rows[$rowNum]['project_date_assess_prof'] = date('j F Y', strtotime($row['project_date_assess_prof']));
       }
+      if (array_key_exists('project_date_first_main', $row) && (!empty($row['project_date_first_main']))) {
+        $rows[$rowNum]['project_date_first_main'] = date('j F Y', strtotime($row['project_date_first_main']));
+      }
+      if (array_key_exists('project_date_expert_reacted', $row) && (!empty($row['project_date_expert_reacted']))) {
+        $rows[$rowNum]['project_date_expert_reacted'] = date('j F Y', strtotime($row['project_date_expert_reacted']));
+      }
+      if (array_key_exists('project_date_cv_sent', $row) && (!empty($row['project_date_cv_sent']))) {
+        $rows[$rowNum]['project_date_cv_sent'] = date('j F Y', strtotime($row['project_date_cv_sent']));
+      }
+      if (array_key_exists('project_date_cust_approves_expert', $row) && (!empty($row['project_date_cust_approves_expert']))) {
+        $rows[$rowNum]['project_date_cust_approves_expert'] = date('j F Y', strtotime($row['project_date_cust_approves_expert']));
+      }
+      if (array_key_exists('proect_date_start_logistics', $row) && (!empty($row['proect_date_start_logistics']))) {
+        $rows[$rowNum]['proect_date_start_logistics'] = date('j F Y', strtotime($row['proect_date_start_logistics']));
+      }
 
       if (array_key_exists('project_project_name', $row)) {
         $projectUrl = CRM_Utils_System::url('civicrm/pumproject', 'action=view&pid='.$row['project_project_id'], $this->_absoluteUrl);
@@ -405,16 +421,20 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
       $toDateColumn = $columnValues['to_date'];
       $fromDate = $dao->$fromDateColumn;
       $toDate = $dao->$toDateColumn;
-      $throughput = $this->calculateThroughput($fromDate, $toDate);
-      if ($throughput == 0) {
-        $throughputString = '0 days';
+      if (!empty($fromDate) && !empty($toDate)) {
+        $throughput = $this->calculateThroughput($fromDate, $toDate);
+        if ($throughput == 0) {
+          $throughputString = '0 days';
+        } else {
+          $throughputString = $throughput . ' days';
+        }
+        if ($throughput > $columnValues['norm']) {
+          $row[$columnName] = '<span style="color: red;">' . $throughputString . '</span>';
+        } else {
+          $row[$columnName] = '<span style="color: green;">' . $throughputString . '</span>';
+        }
       } else {
-        $throughputString = $throughput . ' days';
-      }
-      if ($throughput > $columnValues['norm']) {
-        $row[$columnName] = '<span style="color: red;">' . $throughputString . '</span>';
-      } else {
-        $row[$columnName] = '<span style="color: green;">' . $throughputString . '</span>';
+        $row[$columnName] = '<span style="color: red;"> - </span>';
       }
     }
   }
@@ -539,7 +559,7 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
   private function setReportUserContext() {
    $session = CRM_Core_Session::singleton();
     $instanceId = CRM_Core_DAO::singleValueQuery('SELECT id FROM civicrm_report_instance WHERE report_id = %1',
-      array(1 => array('pumprojectthroughput', 'String')));
+      array(1 => array('pumprojectthroughputcustomer', 'String')));
     if (!empty($instanceId)) {
       $session->pushUserContext(CRM_Utils_System::url('civicrm/report/instance/'.$instanceId, 'reset=1', true));
     } else {
