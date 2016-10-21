@@ -19,18 +19,9 @@ class CRM_Doorloopcustomer_Utils {
   public static function getThroughutNormValues() {
     $result = array();
     try {
-      $optionValues = civicrm_api3('OptionValue', 'get', array(
-        'option_group_id' => 'pum_throughput_norm',
-        'is_active' => 1
-      ));
-      foreach ($optionValues['values'] as $optionValue) {
-        $normNameParts = explode(' ', $optionValue['name']);
-        $normNameLower = array();
-        foreach ($normNameParts as $normNamePart) {
-          $normNameLower[] = strtolower($normNamePart);
-        }
-        $normName = implode('_', $normNameLower);
-        $result[$normName] =  $optionValue['label'];
+      $norms = civicrm_api3('Doorloopnormen', 'get', array());
+      foreach ($norms['values'] as $norm) {
+        $result[$norm['name']] =  $norm['norm'];
       }
     } catch (CiviCRM_API3_Exception $ex) { }
     return $result;
