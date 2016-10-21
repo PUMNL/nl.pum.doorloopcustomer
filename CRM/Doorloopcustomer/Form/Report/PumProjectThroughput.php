@@ -421,7 +421,11 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
       $toDateColumn = $columnValues['to_date'];
       $fromDate = $dao->$fromDateColumn;
       $toDate = $dao->$toDateColumn;
-      if (!empty($fromDate) && !empty($toDate)) {
+      // if either fromDate or toDate is empty, place - in column as the process is not
+      // yet at this stage
+      if (empty($fromDate) || empty($toDate)) {
+        $row[$columnName] = '<span style="color: green;"> - </span>';
+      } else {
         $throughput = $this->calculateThroughput($fromDate, $toDate);
         if ($throughput == 0) {
           $throughputString = '0 days';
@@ -433,8 +437,6 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
         } else {
           $row[$columnName] = '<span style="color: green;">' . $throughputString . '</span>';
         }
-      } else {
-        $row[$columnName] = '<span style="color: green;"> - </span>';
       }
     }
   }
