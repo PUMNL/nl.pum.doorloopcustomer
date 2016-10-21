@@ -13,6 +13,7 @@
  */
 function civicrm_api3_throughput_migrate($params) {
   $returnValues = array();
+  $noDataFound = 0;
   $dao = CRM_Core_DAO::executeQuery('SELECT id AS project_id, customer_id FROM civicrm_project WHERE customer_id IS NOT NULL
     AND date_customer_created IS NULL LIMIT 1000');
   while ($dao->fetch()) {
@@ -38,11 +39,14 @@ function civicrm_api3_throughput_migrate($params) {
       $sql = 'UPDATE civicrm_project SET '.implode(', ', $sqlClauses).' WHERE id = %'.$sqlIndex;
       $sqlParams[$sqlIndex] = array($dao->project_id, 'Integer');
       CRM_Core_DAO::executeQuery($sql, $sqlParams);
+    } else {
+      $noDataFound ++;
     }
   }
 
   $remainCount = CRM_Core_DAO::singleValueQuery('SELECT count(*) FROM civicrm_project WHERE customer_id IS NOT NULL AND date_customer_created IS NULL');
-
+  $remainCount = $remainCount - $noDataFound;
+  
   $returnValues[] = array(
     'Remaining projects to migrate' => $remainCount,
   );
