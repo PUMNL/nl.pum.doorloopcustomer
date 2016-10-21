@@ -180,14 +180,20 @@ function _get_date_assess_rep($projectId) {
       'name' => 'Change Custom Data',
       'return' => 'value'
     ));
+    $assessmentRepActivitytypeId = civicrm_api3('OptionValue', 'getvalue', array(
+      'option_group_id' => 'activity_type',
+      'name' => 'Assessment Project Request by Rep',
+      'return' => 'value'
+    ));
     $sql = 'SELECT a.activity_date_time FROM civicrm_case cc JOIN civicrm_case_activity ca ON cc.id = ca.case_id 
       JOIN civicrm_activity a ON ca.activity_id = a.id AND a.is_current_revision = %1
-      WHERE cc.id = %2 AND a.activity_type_id = %3 AND a.subject = %4 ORDER BY a.activity_date_time DESC LIMIT 1';
+      WHERE cc.id = %2 AND ((a.activity_type_id = %3 AND a.subject = %4) OR a.activity_type_id = %5) ORDER BY a.activity_date_time DESC LIMIT 1';
     $sqlParams = array(
       1 => array(1, 'Integer'),
       2 => array($caseId, 'Integer'),
       3 => array($changeCustomDataActivityTypeId, 'Integer'),
-      4 => array('Intake : change data', 'String')
+      4 => array('Intake : change data', 'String'),
+      5 => array($assessmentRepActivitytypeId, 'Integer')
     );
     $dateAssessRep = CRM_Core_DAO::singleValueQuery($sql, $sqlParams);
     if ($dateAssessRep) {
@@ -236,12 +242,17 @@ function _get_date_assess_prof($projectId) {
     'option_group_id' => 'case_status',
     'return' => 'value'
   ));
+  $completedCaseStatusId = civicrm_api3('OptionValue', 'getvalue', array(
+    'name' => 'Completed',
+    'option_group_id' => 'case_status',
+    'return' => 'value'
+  ));
 
   $sql = 'SELECT a.activity_date_time FROM civicrm_case cc JOIN civicrm_case_project cp ON cc.id = cp.case_id 
     AND cp.project_id = %1
     JOIN civicrm_case_activity ca ON cc.id = ca.case_id
     JOIN civicrm_activity a ON ca.activity_id = a.id AND a.is_current_revision = %2 AND a.activity_type_id = %3
-    WHERE cc.case_type_id LIKE %4 AND cc.status_id IN (%5,%6, %7, %8, %9) ORDER BY activity_date_time DESC LIMIT 1';
+    WHERE cc.case_type_id LIKE %4 AND cc.status_id IN (%5,%6, %7, %8, %9, %10) ORDER BY activity_date_time DESC LIMIT 1';
   $sqlParams = array(
     1 => array($projectId, 'Integer'),
     2 => array(1, 'Integer'),
@@ -251,7 +262,8 @@ function _get_date_assess_prof($projectId) {
     6 => array($cancelledCaseStatusId, 'Integer'),
     7 => array($declinedCaseStatusId, 'Integer'),
     8 => array($errorCaseStatusId, 'Integer'),
-    9 => array($rejectedCaseStatusId, 'Integer')
+    9 => array($rejectedCaseStatusId, 'Integer'),
+    10 => array($completedCaseStatusId, 'Integer'),
   );
   $dateAssessProf = CRM_Core_DAO::singleValueQuery($sql, $sqlParams);
   if ($dateAssessProf) {
