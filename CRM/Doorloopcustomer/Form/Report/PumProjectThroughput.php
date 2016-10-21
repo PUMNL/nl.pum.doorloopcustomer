@@ -212,6 +212,12 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
    */
   function where() {
     $clauses = array();
+    // only show projects where intake was between now and 2 mnths ago
+    $endDate = date('Y-m-d');
+    $startDate = date('Y-m-d', strtotime("-2 months"));
+    $clauses[] = "({$this->_aliases['project']}.date_request_submitted IS NOT NULL AND 
+      {$this->_aliases['project']}.date_request_submitted BETWEEN '{$startDate}' AND '{$endDate}')";
+
     $this->_having = '';
     foreach ($this->_columns as $tableName => $table) {
       if (array_key_exists('filters', $table)) {
@@ -568,6 +574,7 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
       $session->pushUserContext(CRM_Utils_System::url('civicrm/dashboard/', 'reset=1', true));
     }
   }
+
   /**
    * Overridden parent method select to make sure that the required date fields are selected in the row
    * even if they are not selected to be displayed
@@ -578,7 +585,7 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
       'date_first_main', 'date_expert_added', 'date_expert_reacted', 'date_cv_sent', 'date_cust_approves_expert',
       'date_start_logistics');
     foreach ($dateColumns as $dateColumn) {
-      $clause = $this->_aliases['project'].'.'.$dateColumn.' as project_'.$dateColumn;
+      $clause = $this->_aliases['project'].'.'.$dateColumn.' AS project_'.$dateColumn;
       if (!in_array($clause, $this->_selectClauses)) {
         $this->_selectClauses[] = $clause;
       }
