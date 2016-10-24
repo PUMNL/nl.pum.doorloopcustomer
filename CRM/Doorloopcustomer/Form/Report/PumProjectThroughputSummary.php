@@ -1,253 +1,143 @@
 <?php
 
+/**
+ * Class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput for PUM report Project Doorlooptijden
+ *
+ * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+ * @date 29 Sep 2016
+ * @license AGPL-3.0
+
+ */
 class CRM_Doorloopcustomer_Form_Report_PumProjectThroughputSummary extends CRM_Report_Form {
 
-  protected $_addressField = FALSE;
-
-  protected $_emailField = FALSE;
-
   protected $_summary = NULL;
+  protected $_add2groupSupported = FALSE;
+  protected $_exposeContactID = FALSE;
 
-  protected $_customGroupExtends = array('Membership');
-  protected $_customGroupGroupBy = FALSE; function __construct() {
-    $this->_columns = array(
-      'civicrm_contact' => array(
-        'dao' => 'CRM_Contact_DAO_Contact',
-        'fields' => array(
-          'sort_name' => array(
-            'title' => ts('Contact Name'),
-            'required' => TRUE,
-            'default' => TRUE,
-            'no_repeat' => TRUE,
-          ),
-          'id' => array(
-            'no_display' => TRUE,
-            'required' => TRUE,
-          ),
-          'first_name' => array(
-            'title' => ts('First Name'),
-            'no_repeat' => TRUE,
-          ),
-          'id' => array(
-            'no_display' => TRUE,
-            'required' => TRUE,
-          ),
-          'last_name' => array(
-            'title' => ts('Last Name'),
-            'no_repeat' => TRUE,
-          ),
-          'id' => array(
-            'no_display' => TRUE,
-            'required' => TRUE,
-          ),
-        ),
-        'filters' => array(
-          'sort_name' => array(
-            'title' => ts('Contact Name'),
-            'operator' => 'like',
-          ),
-          'id' => array(
-            'no_display' => TRUE,
-          ),
-        ),
-        'grouping' => 'contact-fields',
-      ),
-      'civicrm_membership' => array(
-        'dao' => 'CRM_Member_DAO_Membership',
-        'fields' => array(
-          'membership_type_id' => array(
-            'title' => 'Membership Type',
-            'required' => TRUE,
-            'no_repeat' => TRUE,
-          ),
-          'join_date' => array('title' => ts('Join Date'),
-            'default' => TRUE,
-          ),
-          'source' => array('title' => 'Source'),
-        ),
-        'filters' => array(
-          'join_date' => array(
-            'operatorType' => CRM_Report_Form::OP_DATE,
-          ),
-          'owner_membership_id' => array(
-            'title' => ts('Membership Owner ID'),
-            'operatorType' => CRM_Report_Form::OP_INT,
-          ),
-          'tid' => array(
-            'name' => 'membership_type_id',
-            'title' => ts('Membership Types'),
-            'type' => CRM_Utils_Type::T_INT,
-            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'options' => CRM_Member_PseudoConstant::membershipType(),
-          ),
-        ),
-        'grouping' => 'member-fields',
-      ),
-      'civicrm_membership_status' => array(
-        'dao' => 'CRM_Member_DAO_MembershipStatus',
-        'alias' => 'mem_status',
-        'fields' => array(
-          'name' => array(
-            'title' => ts('Status'),
-            'default' => TRUE,
-          ),
-        ),
-        'filters' => array(
-          'sid' => array(
-            'name' => 'id',
-            'title' => ts('Status'),
-            'type' => CRM_Utils_Type::T_INT,
-            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'options' => CRM_Member_PseudoConstant::membershipStatus(NULL, NULL, 'label'),
-          ),
-        ),
-        'grouping' => 'member-fields',
-      ),
-      'civicrm_address' => array(
-        'dao' => 'CRM_Core_DAO_Address',
-        'fields' => array(
-          'street_address' => NULL,
-          'city' => NULL,
-          'postal_code' => NULL,
-          'state_province_id' => array('title' => ts('State/Province')),
-          'country_id' => array('title' => ts('Country')),
-        ),
-        'grouping' => 'contact-fields',
-      ),
-      'civicrm_email' => array(
-        'dao' => 'CRM_Core_DAO_Email',
-        'fields' => array('email' => NULL),
-        'grouping' => 'contact-fields',
-      ),
-    );
-    $this->_groupFilter = TRUE;
-    $this->_tagFilter = TRUE;
+  protected $_customGroupExtends = array();
+  protected $_projectOfficerSelectList = array();
+  private $_throughputColumnNames = array();
+  private $_fieldNames = array();
+  private $_poRows = array();
+  private $_totalRow = array();
+
+  /**
+   * Constructor method
+   */
+  function __construct() {
+    $this->setReportUserContext();
+    $this->setThroughputColumns();
+    $this->setProjectOfficerSelectList();
+    $this->setPoRows();
+    $this->setTotalRow();
+
     parent::__construct();
   }
 
-  function preProcess() {
-    $this->assign('reportTitle', ts('Membership Detail Report'));
-    parent::preProcess();
-  }
-
-  function select() {
-    $select = $this->_columnHeaders = array();
-
-    foreach ($this->_columns as $tableName => $table) {
-      if (array_key_exists('fields', $table)) {
-        foreach ($table['fields'] as $fieldName => $field) {
-          if (CRM_Utils_Array::value('required', $field) ||
-            CRM_Utils_Array::value($fieldName, $this->_params['fields'])
-          ) {
-            if ($tableName == 'civicrm_address') {
-              $this->_addressField = TRUE;
-            }
-            elseif ($tableName == 'civicrm_email') {
-              $this->_emailField = TRUE;
-            }
-            $select[] = "{$field['dbAlias']} as {$tableName}_{$fieldName}";
-            $this->_columnHeaders["{$tableName}_{$fieldName}"]['title'] = $field['title'];
-            $this->_columnHeaders["{$tableName}_{$fieldName}"]['type'] = CRM_Utils_Array::value('type', $field);
-          }
-        }
-      }
+  /**
+   * Method to set the column names for the throughput columns
+   *
+   * @access private
+   */
+  private function setThroughputColumns() {
+    // todo check against column names in modifyColumnHeaders
+    $norms = CRM_Doorloopcustomer_Utils::getThroughutNormValues();
+    $names = array(
+      'from_request_to_approve_rep' => array(
+        'from_date' => 'date_request_submitted',
+        'to_date' => 'date_assess_rep'),
+      'from_approve_rep_to_approve_prof' => array(
+        'from_date' => 'date_assess_rep',
+        'to_date' => 'date_assess_prof'),
+      'from_request_to_approve_prof' => array(
+        'from_date' => 'date_request_submitted',
+        'to_date' => 'date_assess_prof'),
+      'from_approve_prof_to_first_main' => array(
+        'from_date' => 'date_assess_prof',
+        'to_date' => 'date_first_main'),
+      'from_first_main_to_expert_reacted' => array(
+        'from_date' => 'date_first_main',
+        'to_date' => 'date_expert_reacted'),
+      'from_expert_reacted_to_cv_sent' => array(
+        'from_date' => 'date_expert_reacted',
+        'to_date' => 'date_cv_sent'),
+      'from_cv_sent_to_customer_approves' => array(
+        'from_date' => 'date_cv_sent',
+        'to_date' => 'date_cust_approves_expert'),
+      'from_customer_approves_to_start_logistics' => array(
+        'from_date' => 'date_cust_approves_expert',
+        'to_date' => 'date_start_logistics'),
+    );
+    foreach ($names as $key => $values) {
+      $this->_fieldNames[] = $key;
+      $this->_throughputColumnNames[$key] = array(
+        'from_date' => $values['from_date'],
+        'to_date' => $values['to_date'],
+        'norm' => $norms[$key]);
     }
-
-    $this->_select = "SELECT " . implode(', ', $select) . " ";
   }
 
+  /**
+   * Overridden parent method to build from part of query
+   */
   function from() {
-    $this->_from = NULL;
-
-    $this->_from = "
-         FROM  civicrm_contact {$this->_aliases['civicrm_contact']} {$this->_aclFrom}
-               INNER JOIN civicrm_membership {$this->_aliases['civicrm_membership']}
-                          ON {$this->_aliases['civicrm_contact']}.id =
-                             {$this->_aliases['civicrm_membership']}.contact_id AND {$this->_aliases['civicrm_membership']}.is_test = 0
-               LEFT  JOIN civicrm_membership_status {$this->_aliases['civicrm_membership_status']}
-                          ON {$this->_aliases['civicrm_membership_status']}.id =
-                             {$this->_aliases['civicrm_membership']}.status_id ";
-
-
-    //used when address field is selected
-    if ($this->_addressField) {
-      $this->_from .= "
-             LEFT JOIN civicrm_address {$this->_aliases['civicrm_address']}
-                       ON {$this->_aliases['civicrm_contact']}.id =
-                          {$this->_aliases['civicrm_address']}.contact_id AND
-                          {$this->_aliases['civicrm_address']}.is_primary = 1\n";
-    }
-    //used when email field is selected
-    if ($this->_emailField) {
-      $this->_from .= "
-              LEFT JOIN civicrm_email {$this->_aliases['civicrm_email']}
-                        ON {$this->_aliases['civicrm_contact']}.id =
-                           {$this->_aliases['civicrm_email']}.contact_id AND
-                           {$this->_aliases['civicrm_email']}.is_primary = 1\n";
-    }
+    $this->_from = "FROM pum_project_throughput_view";
   }
 
+  /**
+   * Overridden parent method to build where clause
+   */
   function where() {
-    $clauses = array();
-    foreach ($this->_columns as $tableName => $table) {
-      if (array_key_exists('filters', $table)) {
-        foreach ($table['filters'] as $fieldName => $field) {
-          $clause = NULL;
-          if (CRM_Utils_Array::value('operatorType', $field) & CRM_Utils_Type::T_DATE) {
-            $relative = CRM_Utils_Array::value("{$fieldName}_relative", $this->_params);
-            $from     = CRM_Utils_Array::value("{$fieldName}_from", $this->_params);
-            $to       = CRM_Utils_Array::value("{$fieldName}_to", $this->_params);
+    // only show projects where intake was between now and 2 mnths ago
+    $selectionDate = date('Y').'-01-01 00:00:00';
+    $endDate = date('Y-m-d').' 00:00:00';
+    $this->_where = "WHERE date_request_submitted IS NOT NULL AND date_request_submitted > '{$selectionDate}' AND 
+      (end_date IS NULL OR end_date > '{$endDate}')";
+  }
 
-            $clause = $this->dateClause($field['name'], $relative, $from, $to, $field['type']);
-          }
-          else {
-            $op = CRM_Utils_Array::value("{$fieldName}_op", $this->_params);
-            if ($op) {
-              $clause = $this->whereClause($field,
-                $op,
-                CRM_Utils_Array::value("{$fieldName}_value", $this->_params),
-                CRM_Utils_Array::value("{$fieldName}_min", $this->_params),
-                CRM_Utils_Array::value("{$fieldName}_max", $this->_params)
-              );
-            }
-          }
-
-          if (!empty($clause)) {
-            $clauses[] = $clause;
-          }
-        }
-      }
-    }
-
-    if (empty($clauses)) {
-      $this->_where = "WHERE ( 1 ) ";
-    }
-    else {
-      $this->_where = "WHERE " . implode(' AND ', $clauses);
-    }
-
-    if ($this->_aclWhere) {
-      $this->_where .= " AND {$this->_aclWhere} ";
+  /**
+   * Overridden parent method to set the column headers
+   * add the form... to .... columns and sequence all headers
+   */
+  function modifyColumnHeaders() {
+    $this->_columnHeaders['project_officer'] = array('title' => ts('Project Officer'),'type' => CRM_Utils_Type::T_STRING,);
+    $this->_columnHeaders['no_projects'] = array('title' => ts('No. of Projects'),'type' => CRM_Utils_Type::T_STRING,);
+    foreach ($this->_fieldNames as $name) {
+      $title = $this->generateTitleFromColumnName($name);
+      $this->_columnHeaders[$name] = array('title' => strtoupper(ts($title).':'),'type' => CRM_Utils_Type::T_STRING,);
+      $this->_columnHeaders[$name.'_norm'] = array('title' => ts('Norm'),'type' => CRM_Utils_Type::T_STRING,);
+      $this->_columnHeaders[$name.'_no_in'] = array('title' => ts('No. In'),'type' => CRM_Utils_Type::T_STRING,);
+      $this->_columnHeaders[$name.'_pct_in'] = array('title' => ts('% In'),'type' => CRM_Utils_Type::T_STRING,);
+      $this->_columnHeaders[$name.'_no_out'] = array('title' => ts('No. Out'),'type' => CRM_Utils_Type::T_STRING,);
+      $this->_columnHeaders[$name.'_pct_out'] = array('title' => ts('%. Out'),'type' => CRM_Utils_Type::T_STRING,);
     }
   }
 
-  function groupBy() {
-    $this->_groupBy = " GROUP BY {$this->_aliases['civicrm_contact']}.id, {$this->_aliases['civicrm_membership']}.membership_type_id";
+  /**
+   * Method to generate header title for from to columns from column name
+   *
+   * @param $columnName
+   * @return string
+   */
+  private function generateTitleFromColumnName($columnName) {
+    $parts = explode('_', $columnName);
+    $result = array();
+    foreach ($parts as $part) {
+      $result[] = ucfirst($part);
+    }
+    return implode(' ', $result);
   }
 
-  function orderBy() {
-    $this->_orderBy = " ORDER BY {$this->_aliases['civicrm_contact']}.sort_name, {$this->_aliases['civicrm_contact']}.id, {$this->_aliases['civicrm_membership']}.membership_type_id";
-  }
-
+  /**
+   * Overridden parent method to process criteria into report with data
+   */
   function postProcess() {
 
     $this->beginPostProcess();
 
-    // get the acl clauses built before we assemble the query
-    $this->buildACLClause($this->_aliases['civicrm_contact']);
     $sql = $this->buildQuery(TRUE);
 
-    $rows = array();
+    $rows = $graphRows = array();
     $this->buildRows($sql, $rows);
 
     $this->formatDisplay($rows);
@@ -255,66 +145,232 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughputSummary extends CRM_R
     $this->endPostProcess($rows);
   }
 
+  /**
+   * Method to calculate the number of working days between from date and to date
+   *
+   * @param $fromDate
+   * @param $toDate
+   * @return int
+   */
+  private function calculateThroughput($fromDate, $toDate) {
+    $fromDate = new DateTime($fromDate);
+    $toDate = new DateTime($toDate);
+    $interval = $fromDate->diff($toDate);
+    return $interval->format('%a');
+  }
+
+
+  /**
+   * Method to get the project officers list for the user filter
+   *
+   * @access private
+   */
+  private function setProjectOfficerSelectList() {
+    $projectOfficerGroupId = civicrm_api3('Group', 'Getvalue', array('name' => 'Project_Officers_54', 'return' => 'id'));
+
+    $result = array();
+    $groupContactParams = array('group_id' => $projectOfficerGroupId, 'options' => array('limit' => 99999));
+    try {
+      $members = civicrm_api3('GroupContact', 'Get', $groupContactParams);
+      foreach ($members['values'] as $member) {
+        $result[$member['contact_id']] = CRM_Threepeas_Utils::getContactName($member['contact_id']);
+      }
+    } catch (CiviCRM_API3_Exception $ex) {}
+    asort($result);
+    $this->_projectOfficerSelectList = $result;
+  }
+
+  /**
+   * method to set the Project Officer Rows
+   */
+  private function setPoRows()
+  {
+    foreach ($this->_projectOfficerSelectList as $projectOfficerId => $projectOfficer) {
+      $poRow = array();
+      $poRow['project_officer'] = $projectOfficer;
+      $poRow['no_projects'] = 0;
+      foreach ($this->_fieldNames as $element) {
+        $poRow[$element . '_no_in'] = 0;
+
+        $poRow[$element . '_no_out'] = 0;
+        $poRow[$element . '_pct_in'] = 0;
+        $poRow[$element . '_pct_out'] = 0;
+      }
+      $this->_poRows[$projectOfficerId] = $poRow;
+    }
+  }
+
+
+  /**
+   * method to set the total row
+   */
+  private function setTotalRow() {
+    $this->_totalRow =array(
+      'project_officer' => 'Totals',
+      'no_projects' => 0
+    );
+    foreach ($this->_fieldNames as $element) {
+      $this->_totalRow[$element . '_no_in'] = 0;
+      $this->_totalRow[$element . '_no_out'] = 0;
+      $this->_totalRow[$element . '_pct_in'] = 0;
+      $this->_totalRow[$element . '_pct_out'] = 0;
+    }
+  }
+
+  /**
+   * Overridden parent method orderBy (issue 2995 order by status on weight)
+   */
+  function orderBy() {
+    $this->_orderBy  = "ORDER BY project_officer_id";
+  }
+
+  /**
+   * Set report url as user context
+   *
+   */
+  private function setReportUserContext() {
+    $session = CRM_Core_Session::singleton();
+    $instanceId = CRM_Core_DAO::singleValueQuery('SELECT id FROM civicrm_report_instance WHERE report_id = %1',
+      array(1 => array('nl.pum.doorloopcustomer/pumprojectthroughputsummary', 'String')));
+    if (!empty($instanceId)) {
+      $session->pushUserContext(CRM_Utils_System::url('civicrm/report/instance/'.$instanceId, 'reset=1', true));
+    } else {
+      $session->pushUserContext(CRM_Utils_System::url('civicrm/dashboard/', 'reset=1', true));
+    }
+  }
+  /**
+   * Overridden parent method select to make sure that the required date fields are selected in the row
+   * even if they are not selected to be displayed
+   */
+  public function select() {
+    $this->_select = "SELECT * ";
+  }
+
+  /**
+   * Overridden parent method to build rows taking throughput columns into account
+   * @param $sql
+   * @param $rows
+   */
+  function buildRows($sql, &$rows) {
+    $this->modifyColumnHeaders();
+    $dao = CRM_Core_DAO::executeQuery($sql);
+    // count no of project within norm or outside norm based on dao
+    while ($dao->fetch()) {
+      $currentNo = $this->_poRows[$dao->project_officer_id]['no_projects'];
+      $currentNo++;
+      $this->_poRows[$dao->project_officer_id]['no_projects'] = $currentNo;
+      $this->enhancePoRowWithThroughput($dao);
+    }
+    // add norm row
+    $rows[] = $this->fillNormRow();
+    // now calculate percentages for project officer rows and add norms
+    $this->completePoRows();
+    foreach ($this->_poRows as $poRow) {
+      $rows[] = $poRow;
+    }
+    $this->completeTotalRow();
+    $rows[] = $this->_totalRow;
+  }
+
+  /**
+   * Method to set the norm row
+   *
+   * @return array
+   */
+  private function fillNormRow() {
+    $row = array(
+      'project_officer' => '<strong>NORMS</strong>',
+      'no_projects' => ''
+    );
+    foreach ($this->_fieldNames as $element) {
+      $row[$element.'_no_in'] = $this->_throughputColumnNames[$element]['norm'];
+      $row[$element.'_no_out'] = '';
+      $row[$element.'_pct_in'] = '';
+      $row[$element.'_pct_out'] = '';
+    }
+    return $row;
+  }
+
+  /**
+   * Method to complete the project officer rows with percentage and add up in total row
+   */
+  private function completePoRows() {
+    foreach ($this->_poRows as $projectOfficerId => $poRow) {
+      // add po number of projects to total row number of projects
+      $this->_totalRow['no_projects'] = $this->_totalRow['no_projects'] + $poRow['no_projects'];
+      // for each from_to element
+      foreach ($this->_fieldNames as $element) {
+        // add numbers po to total numbers
+        $this->_totalRow[$element.'_no_in'] = $this->_totalRow[$element.'_no_in'] + $poRow[$element.'_no_in'];
+        $this->_totalRow[$element.'_no_out'] = $this->_totalRow[$element.'_no_in'] + $poRow[$element.'_no_out'];
+        // calculate percentages
+        if (!empty($poRow['no_projects'])) {
+          $pctIn = round(($poRow[$element . '_no_in'] / $poRow['no_projects']) * 100);
+          $this->_poRows[$projectOfficerId][$element . '_pct_in'] = $pctIn;
+          $pctOut = round(($poRow[$element . '_no_out'] / $poRow['no_projects']) * 100);
+          $this->_poRows[$projectOfficerId][$element . '_pct_out'] = $pctOut;
+        }
+      }
+    }
+  }
+
+  /**
+   * Method to complete the total row with percentages
+   */
+  private function completeTotalRow() {
+    foreach ($this->_fieldNames as $element) {
+      // calculate percentages
+      $pctIn = round(($this->_totalRow[$element.'_no_in']/$this->_totalRow['no_projects']) * 100);
+      $this->_totalRow[$element.'_pct_in'] = $pctIn;
+      $pctOut = round(($this->_totalRow[$element.'_no_out']/$this->_totalRow['no_projects']) * 100);
+      $this->_totalRow[$element.'_pct_out'] = $pctOut;
+    }
+  }
+
+  /**
+   * Method to add throughput data to each dao element
+   *
+   * @param object $dao
+   */
+  private function enhancePoRowWithThroughput($dao) {
+    if (isset($this->_poRows[$dao->project_officer_id])) {
+      foreach ($this->_fieldNames as $name) {
+        $fromDateColumn = $this->_throughputColumnNames[$name]['from_date'];
+        $toDateColumn = $this->_throughputColumnNames[$name]['to_date'];
+        $fromDate = $dao->$fromDateColumn;
+        $toDate = $dao->$toDateColumn;
+        if (empty($fromDate) || empty($toDate)) {
+          $this->_poRows[$dao->project_officer_id][$name.'_no_in']++;
+      } else {
+          $throughput = $this->calculateThroughput($fromDate, $toDate);
+          $norm = $this->_throughputColumnNames[$name]['norm'];
+          if ($throughput > $norm) {
+            $this->_poRows[$dao->project_officer_id][$name.'_no_out']++;
+          } else {
+            $this->_poRows[$dao->project_officer_id][$name.'_no_in']++;
+          }
+        }
+      }
+    }
+  }
   function alterDisplay(&$rows) {
-    // custom code to alter rows
-    $entryFound = FALSE;
-    $checkList = array();
     foreach ($rows as $rowNum => $row) {
-
-      if (!empty($this->_noRepeats) && $this->_outputMode != 'csv') {
-        // not repeat contact display names if it matches with the one
-        // in previous row
-        $repeatFound = FALSE;
-        foreach ($row as $colName => $colVal) {
-          if (CRM_Utils_Array::value($colName, $checkList) &&
-            is_array($checkList[$colName]) &&
-            in_array($colVal, $checkList[$colName])
-          ) {
-            $rows[$rowNum][$colName] = "";
-            $repeatFound = TRUE;
-          }
-          if (in_array($colName, $this->_noRepeats)) {
-            $checkList[$colName][] = $colVal;
-          }
+      if (empty($row['no_projects'])) {
+        $rows[$rowNum]['no_projects'] = '-';
+      }
+      foreach ($this->_fieldNames as $name) {
+        if (empty($row[$name.'_no_in'])) {
+          $rows[$rowNum][$name.'_no_in'] = '-';
         }
-      }
-
-      if (array_key_exists('civicrm_membership_membership_type_id', $row)) {
-        if ($value = $row['civicrm_membership_membership_type_id']) {
-          $rows[$rowNum]['civicrm_membership_membership_type_id'] = CRM_Member_PseudoConstant::membershipType($value, FALSE);
+        if (empty($row[$name.'_no_out'])) {
+          $rows[$rowNum][$name.'_no_out'] = '-';
         }
-        $entryFound = TRUE;
-      }
-
-      if (array_key_exists('civicrm_address_state_province_id', $row)) {
-        if ($value = $row['civicrm_address_state_province_id']) {
-          $rows[$rowNum]['civicrm_address_state_province_id'] = CRM_Core_PseudoConstant::stateProvince($value, FALSE);
+        if (empty($row[$name.'_pct_in'])) {
+          $rows[$rowNum][$name.'_pct_in'] = '-';
         }
-        $entryFound = TRUE;
-      }
-
-      if (array_key_exists('civicrm_address_country_id', $row)) {
-        if ($value = $row['civicrm_address_country_id']) {
-          $rows[$rowNum]['civicrm_address_country_id'] = CRM_Core_PseudoConstant::country($value, FALSE);
+        if (empty($row[$name.'_pct_out'])) {
+          $rows[$rowNum][$name.'_pct_out'] = '-';
         }
-        $entryFound = TRUE;
-      }
-
-      if (array_key_exists('civicrm_contact_sort_name', $row) &&
-        $rows[$rowNum]['civicrm_contact_sort_name'] &&
-        array_key_exists('civicrm_contact_id', $row)
-      ) {
-        $url = CRM_Utils_System::url("civicrm/contact/view",
-          'reset=1&cid=' . $row['civicrm_contact_id'],
-          $this->_absoluteUrl
-        );
-        $rows[$rowNum]['civicrm_contact_sort_name_link'] = $url;
-        $rows[$rowNum]['civicrm_contact_sort_name_hover'] = ts("View Contact Summary for this Contact.");
-        $entryFound = TRUE;
-      }
-
-      if (!$entryFound) {
-        break;
       }
     }
   }
