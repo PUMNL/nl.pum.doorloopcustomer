@@ -135,7 +135,9 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughputSummary extends CRM_R
 
     $this->beginPostProcess();
 
-    $sql = $this->buildQuery(TRUE);
+    $sql = $this->buildQuery(FALSE);
+    CRM_Core_Error::debug('sql', $sql);
+    exit();
 
     $rows = $graphRows = array();
     $this->buildRows($sql, $rows);
