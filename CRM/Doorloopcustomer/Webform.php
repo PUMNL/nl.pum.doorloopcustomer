@@ -15,12 +15,18 @@ class CRM_Doorloopcustomer_Webform {
    * @throws Exception if no nid in $webformData
    */
   public static function processWebform(&$webformData) {
-    if ($webformData['nid'] && $webformData['uid']) {
-      switch ($webformData['nid']) {
-        case 732:
-          self::processAsssessRequestByRep($webformData);
-          break;
-        default:
+    // Check whether the element nid and uid are set.
+    // $webformData['uid'] could be 0 when an anonymous user has filled in the webform.
+    if (!isset($webformData['nid']) || !isset($webformData['uid'])) {
+      throw new Exception('Could not find one of the required elements nid, uid in param webformData in '.__METHOD__
+        .', contact your system administrator!');
+    }
+    switch ($webformData['nid']) {
+      case 732:
+        self::processAsssessRequestByRep($webformData);
+        break;
+      default:
+        if (!empty($webformData['uid'])) {
           $webformData['contact_id'] = civicrm_api3('UFMatch', 'getvalue', array(
             'uf_id' => $webformData['uid'],
             'return' => 'contact_id'
