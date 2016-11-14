@@ -25,6 +25,7 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughputSummary extends CRM_R
    * Constructor method
    */
   function __construct() {
+    $this->_noFields = TRUE;
     $this->setReportUserContext();
     $this->setThroughputColumns();
     $this->setProjectOfficerSelectList();
@@ -306,9 +307,9 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughputSummary extends CRM_R
         // calculate percentages
         if (!empty($poRow['no_projects'])) {
           $pctIn = round(($poRow[$element . '_no_in'] / $poRow['no_projects']) * 100);
-          $this->_poRows[$projectOfficerId][$element . '_pct_in'] = $pctIn;
+          $this->_poRows[$projectOfficerId][$element . '_pct_in'] = $pctIn.'%';
           $pctOut = round(($poRow[$element . '_no_out'] / $poRow['no_projects']) * 100);
-          $this->_poRows[$projectOfficerId][$element . '_pct_out'] = $pctOut;
+          $this->_poRows[$projectOfficerId][$element . '_pct_out'] = $pctOut.'%';
         }
       }
     }
@@ -321,9 +322,9 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughputSummary extends CRM_R
     foreach ($this->_fieldNames as $element) {
       // calculate percentages
       $pctIn = round(($this->_totalRow[$element.'_no_in']/$this->_totalRow['no_projects']) * 100);
-      $this->_totalRow[$element.'_pct_in'] = $pctIn;
+      $this->_totalRow[$element.'_pct_in'] = $pctIn.'%';
       $pctOut = round(($this->_totalRow[$element.'_no_out']/$this->_totalRow['no_projects']) * 100);
-      $this->_totalRow[$element.'_pct_out'] = $pctOut;
+      $this->_totalRow[$element.'_pct_out'] = $pctOut.'%';
     }
   }
 
