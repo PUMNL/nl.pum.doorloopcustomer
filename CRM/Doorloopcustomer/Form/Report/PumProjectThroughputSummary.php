@@ -256,6 +256,22 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughputSummary extends CRM_R
     $dao = CRM_Core_DAO::executeQuery($sql);
     // count no of project within norm or outside norm based on dao
     while ($dao->fetch()) {
+      // if no project officer, use '- no prof -'
+      if (empty($dao->project_officer_id)) {
+        $dao->project_officer_id = "- no prof -";
+        $poRow = array();
+        $poRow['project_officer'] = "- no prof -";
+        $poRow['no_projects'] = 0;
+        foreach ($this->_fieldNames as $element) {
+          $poRow[$element . '_no_in'] = 0;
+
+          $poRow[$element . '_no_out'] = 0;
+          $poRow[$element . '_pct_in'] = 0;
+          $poRow[$element . '_pct_out'] = 0;
+        }
+        $this->_poRows["- no prof -"] = $poRow;
+
+      }
       $currentNo = $this->_poRows[$dao->project_officer_id]['no_projects'];
       $currentNo++;
       $this->_poRows[$dao->project_officer_id]['no_projects'] = $currentNo;
@@ -353,6 +369,12 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughputSummary extends CRM_R
       }
     }
   }
+
+  /**
+   * overridden parent function alterDisplay
+   *
+   * @param $rows
+   */
   function alterDisplay(&$rows) {
     foreach ($rows as $rowNum => $row) {
       if (empty($row['no_projects'])) {
