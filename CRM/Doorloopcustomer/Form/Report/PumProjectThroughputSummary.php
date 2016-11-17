@@ -41,7 +41,6 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughputSummary extends CRM_R
    * @access private
    */
   private function setThroughputColumns() {
-    // todo check against column names in modifyColumnHeaders
     $norms = CRM_Doorloopcustomer_Utils::getThroughutNormValues();
     $names = array(
       'from_request_to_approve_rep' => array(
