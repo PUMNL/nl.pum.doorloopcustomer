@@ -43,8 +43,13 @@ class CRM_Doorloopcustomer_Webform {
    */
   public static function processAsssessRequestByRep(&$webformData) {
     $request = CRM_Utils_Request::exportValues();
-    if ($request['caseid']) {
+    $caseId = false;
+    if (!empty($request['case1'])) {
+      $caseId = (int) $request['case1'];
+    } elseif (!empty($request['caseid'])) {
       $caseId = (int) $request['caseid'];
+    }
+    if (!empty($caseId)) {
       $webformData['case_id'] = $caseId;
       $query = 'SELECT project_id FROM civicrm_case_project WHERE case_id = %1 LIMIT 1';
       $webformData['project_id'] = CRM_Core_DAO::singleValueQuery($query, array(1 => array($caseId, 'Integer')));
@@ -54,7 +59,7 @@ class CRM_Doorloopcustomer_Webform {
         $webformData['contact_id'] = (int) $component['value'][0];
         $webformData['representative_id'] = (int) $component['value'][0];
       }
-      if ($component['form_key'] == 'civicrm_1_contact_2_contact_existing') {
+      if ($component['form_key'] == 'civicrm_1_contact_2_contact_existing' || $component['form_key'] == 'civicrm_2_contact_1_contact_existing') {
         $webformData['customer_id'] = (int) $component['value'][0];
       }
     }
