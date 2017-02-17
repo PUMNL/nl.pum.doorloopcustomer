@@ -217,7 +217,7 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
     $startDate = date('Y-m-d', strtotime("-2 months"));
     $clauses[] = "({$this->_aliases['project']}.date_request_submitted IS NOT NULL AND 
       {$this->_aliases['project']}.date_request_submitted BETWEEN '{$startDate}' AND '{$endDate}')";
-
+    $clauses[] = "({$this->_aliases['project']}.end_date IS NULL OR {$this->_aliases['project']}.end_date >= CURDATE())";
     $this->_having = '';
     foreach ($this->_columns as $tableName => $table) {
       if (array_key_exists('filters', $table)) {
