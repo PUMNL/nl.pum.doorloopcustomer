@@ -90,10 +90,6 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
             'no_display' => TRUE,
             'required' => TRUE
           ),
-          'anamon_id' => array(
-            'no_display' => TRUE,
-            'required' => TRUE
-          ),
           'country_coordinator_id' => array(
             'no_display' => TRUE,
             'required' => TRUE
@@ -212,10 +208,10 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
    */
   function where() {
     $clauses = array();
-    // only show projects where intake was between now and 2 mnths ago
+    // only show projects where intake was between now and 6 mnths ago
     $endDate = date('Y-m-d');
-    $startDate = date('Y-m-d', strtotime("-2 months"));
-    $clauses[] = "({$this->_aliases['project']}.date_request_submitted IS NOT NULL AND 
+    $startDate = date('Y-m-d', strtotime("-6 months"));
+    $clauses[] = "({$this->_aliases['project']}.date_request_submitted IS NOT NULL AND
       {$this->_aliases['project']}.date_request_submitted BETWEEN '{$startDate}' AND '{$endDate}')";
     $clauses[] = "({$this->_aliases['project']}.end_date IS NULL OR {$this->_aliases['project']}.end_date >= CURDATE())";
     $this->_having = '';
@@ -238,7 +234,7 @@ class CRM_Doorloopcustomer_Form_Report_PumProjectThroughput extends CRM_Report_F
               $value = $this->_userId;
               if (!empty($value)) {
                 $pum = $this->_aliases['project'];
-                $clause = "({$pum}.anamon_id = {$value} OR {$pum}.programme_manager_id = {$value}
+                $clause = "({$pum}.programme_manager_id = {$value}
                 OR {$pum}.country_coordinator_id = {$value} OR {$pum}.project_officer_id = {$value}
                 OR {$pum}.projectmanager_id = {$value} OR {$pum}.sector_coordinator_id = {$value})";
               }
